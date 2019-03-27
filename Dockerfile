@@ -1,23 +1,15 @@
-FROM postgres:9.6
+FROM ruby:2.5.1-alpine
+RUN apk add --no-cache build-base postgresql-dev tzdata postgresql-client
+RUN bundle config --global frozen 1
 
-RUN mkdir /travis-migrations
-WORKDIR /travis-migrations
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
-# ruby deps
-RUN apt-get update
-RUN apt-get install -y wget build-essential bison zlib1g-dev libyaml-dev libssl1.0-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev openssl
+COPY Gemfile      /usr/src/app
+COPY Gemfile.lock /usr/src/app
 
-# ruby-install
-RUN wget -O ruby-install-0.6.1.tar.gz https://github.com/postmodern/ruby-install/archive/v0.6.1.tar.gz
-RUN tar -xzvf ruby-install-0.6.1.tar.gz
-RUN cd ruby-install-0.6.1/ && make install
-RUN rm -r ruby-install-0.6.1/
+RUN bundle install --deployment
 
-# ruby
-COPY .ruby-version .
-RUN ruby-install --system --no-install-deps ruby `cat .ruby-version`
-RUN which ruby
+COPY . /usr/src/app
 
-# gem setup
-RUN apt-get install libpq-dev
-RUN gem install bundler
+ENTRYPOINT [ "/bin/sh" ]
